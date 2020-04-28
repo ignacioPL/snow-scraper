@@ -1,27 +1,31 @@
 package gb.io.snow.scraper.services
 
 import gb.io.snow.scraper.models.CovidData
-import parser.extraction.Extractor._
-import parser.utils.{Number}
 import java.io.File
+import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.text.PDFTextStripper
 
 
 trait PdfReader {
-  def readPdf(filePath: String): Option[String] //CovidData cambié pata ir viendo resultados
+  def readPdf(filePath: String): CovidData
 }
 
-case class reader(filePath: String) extends PdfReader {
-  override def readPdf(filePath: String)= {
+case class PdfReaderImpl (filePath: String) extends PdfReader {
+
+  override def readPdf(filePath: String): CovidData= {
+
     val file = new File(filePath)
-    println("The length of the file id " + file.length())
-    // si devuelvo el file (y cambio los tipos de salida), corre bien.
-    val extractedText = readPDF(file)
-    extractedText
+    val document: PDDocument = PDDocument.load(file)
 
-    // con esto extractedText ya se rompe.
-    //val keyword = Map("cases" -> Number())
-    //val js : List[String] = getJSONObjects(extractedText, keyword)
-    //js
+    val pdfStripper = new PDFTextStripper()
+    val text: String = pdfStripper.getText(document)
+    document.close()
 
+    val date: String = text.split("REPORTE DIARIO VESPERTINO NRO")(0)
+    // TO DO: remove enters from date string
+    val stringPostNumberOfCases: String = text.split("Hoy fueron confirmados ")(1)
+    val numberOfCases: Int = stringPostNumberOfCases.split(" nuevos casos de COVID-19.")(0).toInt
+
+    CovidData(date,numberOfCases)
   }
 }

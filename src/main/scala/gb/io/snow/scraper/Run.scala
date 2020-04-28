@@ -1,17 +1,17 @@
 package gb.io.snow.scraper
 
-import com.itextpdf.text.pdf.PdfReader
+
 import gb.io.snow.scraper.models.CovidData
-import gb.io.snow.scraper.services.{reader}
+import gb.io.snow.scraper.services.{PdfReaderImpl}
 
 object Run extends App{
-  override def main(args: Array[String] ): Unit = {
-    println("Starting...")
-    println("hola")
 
-    val r = reader("testfile.pdf")
-    val rr = r.readPdf("testfile.pdf")
-    println(rr)
-    println("Finish")
-}
+  println("Starting...")
+
+  val pdfReaderImpl = PdfReaderImpl("testfile.pdf")
+  val covidData: CovidData = pdfReaderImpl.readPdf(filePath = "testfile.pdf")
+  // TO DO: remove enters from date
+  println(covidData)
+
+  println("Finish")
 }

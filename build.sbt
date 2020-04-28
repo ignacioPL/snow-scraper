@@ -6,5 +6,5 @@ scalaVersion := "2.12.11"
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.1.1" % Test,
-  "com.growin" %% "flipper" % "0.3"
+  "org.apache.pdfbox" % "pdfbox" % "2.0.19"
 )
