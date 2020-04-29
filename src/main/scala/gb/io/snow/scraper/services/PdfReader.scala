@@ -23,7 +23,7 @@ case class PdfReaderImpl() extends PdfReader {
     document.close()
 
     val date: String = text.split("REPORTE DIARIO VESPERTINO NRO")(0).trim
-    // TO DO: remove enters from date string
+
     val stringPostNumberOfCases: String = text.split("Hoy fueron confirmados ")(1)
     val numberOfCases: Int = stringPostNumberOfCases.split(" nuevos casos de COVID-19")(0).toInt
 

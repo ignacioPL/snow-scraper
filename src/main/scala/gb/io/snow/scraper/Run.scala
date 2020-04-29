@@ -14,7 +14,7 @@ object Run extends App{
 
   val pdfReaderImpl = PdfReaderImpl()
   val covidData: CovidData = pdfReaderImpl.readPdf(documentAsByte)
-  // TO DO: remove enters from date
+
   println(covidData)
 
   println("Finish")
