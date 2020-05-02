@@ -1,7 +1,7 @@
 package gb.io.snow.scraper.services
 import scalaj.http._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 trait Downloader {
   def downloadLastData(url :String): Array[Byte]
@@ -9,7 +9,7 @@ trait Downloader {
 
 case class DownloaderImpl() extends Downloader  {
   override def downloadLastData(url :String): Array[Byte] = {
-    //val byte: Array[Byte] = Http(url).asBytes.body
+
     val byteDocument: Try[HttpResponse[Array[Byte]]]= Try( Http(url).asBytes )
 
     val bodyDocument: Array[Byte] = byteDocument match {
@@ -17,6 +17,5 @@ case class DownloaderImpl() extends Downloader  {
       case _ => Array.emptyByteArray
     }
     bodyDocument
-    //byte
   }
 }

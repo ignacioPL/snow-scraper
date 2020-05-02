@@ -1,3 +1,4 @@
 package gb.io.snow.scraper.models
+import java.time.LocalDate
 
-case class CovidData(date: String, cases: Int)
+case class CovidData(date: LocalDate, cases: Int)
