@@ -23,13 +23,14 @@ case class PdfReaderImpl() extends PdfReader {
       val date: LocalDate = getDateFromTextString(text)
       val numberOfCases: Int = getTotalCasesFromTextString(text)
       val mapProvCases: Map[String,Int] = getCasesByProvFromTextString(text)
-      CovidData(date, numberOfCases,mapProvCases)
+      CovidData(date,numberOfCases,mapProvCases)
     } else {
       CovidData(null,0,null) }
   }
   def getDateFromTextString(text: String): LocalDate = {
-    val dateString: String = text.split("REPORTE DIARIO VESPERTINO NRO")(0).trim
+    val dateString: String = text.split("REPORTE DIARIO VESPERTINO NRO")(0).replace("\n", "").trim
     println(dateString)
+
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     LocalDate.parse(dateString,formatter)
   }
@@ -43,7 +44,7 @@ case class PdfReaderImpl() extends PdfReader {
     val listProv: List[String] = List("Buenos Aires","Ciudad de Buenos Aires","Catamarca","Chaco","Chubut","Córdoba","Corrientes","Entre Ríos","Formosa","Jujuy","La Pampa","La Rioja","Mendoza","Misiones","Neuquén","Río Negro","Salta","San Juan","San Luis", "Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán")
     val casesProv: List[Int] = listProv.filter(
       prov => textProvincias.contains(prov)).map(
-      prov => textProvincias.split(prov)(1).split('/')(0).split('|')(0).trim.toInt )
+      prov => textProvincias.split(prov)(1).split('/')(0).split('|')(0).trim.replace("*","").toInt )
     listProv.zip(casesProv).toMap
   }
 
