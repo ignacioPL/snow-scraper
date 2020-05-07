@@ -56,14 +56,14 @@ case class PdfReaderImpl() extends PdfReader {
       line => ( getProvFromLine(line),getCasesFromLine(line) ) ).filter(
       x => x._1.isDefined & x._2 >= 0 ).map(
       x => (x._1.get,x._2)).toMap
-    // TO DO: una vez q termina el listado de provncias, si llegara a haber una oracion que contena una provincia y un numero lo va a tomar
+    // TODO: una vez q termina el listado de provncias, si llegara a haber una oracion que contena una provincia y un numero lo va a tomar
   }
   private def getProvFromLine(line: String): Option[String] = {
     val listProv: List[String] = List("Buenos Aires","CABA","Catamarca","Chaco","Chubut","Córdoba","Corrientes","Entre Ríos","Formosa","Jujuy","La Pampa","La Rioja","Mendoza","Misiones","Neuquén","Río Negro","Salta","San Juan","San Luis", "Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán")
     listProv.find( prov => lineContainsProv(line,prov) )
   }
   private def lineContainsProv(line:String,prov:String): Boolean ={
-    prov match {
+    prov match { //TODO despues tenemos q hablar de eso de usar un solo & o un solo | https://www.dummies.com/programming/java/and-operators-and-in-java/
       case "CABA" => line.contains("Ciudad de Buenos Aires") | line.contains("Ciudad Autónoma de Buenos Aires")
       case "Buenos Aires" => line.contains("Buenos Aires") & ! line.contains("Ciudad de Buenos Aires") & ! line.contains("Ciudad Autónoma de Buenos Aires")
       case value => line.contains(value)
