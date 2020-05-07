@@ -6,7 +6,7 @@ import gb.io.snow.scraper.services.{DownloaderImpl, PdfReaderImpl,WriterImpl}
 object Run extends App{
 
   println("Starting...")
-  val dateUrl: String = "02-05-20"
+  val dateUrl: String = "05-05-20"
   val StartUrl: String = "https://www.argentina.gob.ar/sites/default/files/"
   val possibleEndUrl: List[String] = List("-reporte-vespertino-covid-19.pdf",
     "_reporte_vespertino_covid-19.pdf",
