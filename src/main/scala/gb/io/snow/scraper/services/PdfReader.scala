@@ -8,12 +8,12 @@ import org.apache.pdfbox.text.PDFTextStripper
 import scala.util.matching.Regex
 
 trait PdfReader {
-  def readPdf(byte: Array[Byte]): CovidData
+  def readPdf(byte: Array[Byte], dateUrl: String): CovidData
 }
 
 case class PdfReaderImpl() extends PdfReader {
 
-  override def readPdf(byte: Array[Byte]): CovidData = {
+  override def readPdf(byte: Array[Byte], dateUrl: String): CovidData = {
     if (byte.nonEmpty ) {
       // get the text
       val document: PDDocument = PDDocument.load(byte)
@@ -21,7 +21,9 @@ case class PdfReaderImpl() extends PdfReader {
       val text: String = pdfStripper.getText(document)
       document.close()
 
-      val date: LocalDate = getDateFromTextString(text)
+      //val date: LocalDate = getDateFromTextString(text)
+      val formatter = DateTimeFormatter.ofPattern("dd-MM-yy")
+      val date: LocalDate = LocalDate.parse(dateUrl,formatter)
       val numberOfCases: Int = getTotalCasesFromTextString(text)
       //val mapProvCases: Map[String,Int] = getCasesByProvFromTextString(text)
       val mapProvCases: Map[String,Int] = getCasesByProvFromTextString_v2(text)
@@ -32,15 +34,16 @@ case class PdfReaderImpl() extends PdfReader {
   def getDateFromTextString(text: String): LocalDate = {
     val dateString: String = text.split("REPORTE DIARIO VESPERTINO NRO")(0).replace("\n", "").trim
     println(dateString)
-
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     LocalDate.parse(dateString,formatter)
   }
+
   def getTotalCasesFromTextString(text: String): Int ={
     val stringPostNumberOfCases: String = text.split("Hoy fueron confirmados ")(1)
     val numberOfCases: Int = stringPostNumberOfCases.split(" nuevos casos de COVID-19")(0).toInt
     numberOfCases
   }
+
   def getCasesByProvFromTextString(text: String): Map[String, Int] ={
     val textProvincias: String = text.split("Detalle por provincia")(1)
 
@@ -50,6 +53,7 @@ case class PdfReaderImpl() extends PdfReader {
       prov => textProvincias.split(prov)(1).split('/')(0).split('|')(0).trim.replace("*","").toInt )
     listProv.zip(casesProv).toMap
   }
+
   def getCasesByProvFromTextString_v2(text: String) :Map[String,Int] ={
     val textProvincias: String = text.split("Detalle por provincia")(1)
     textProvincias.split("\n").map(
@@ -58,17 +62,20 @@ case class PdfReaderImpl() extends PdfReader {
       x => (x._1.get,x._2)).toMap
     // TODO: una vez q termina el listado de provncias, si llegara a haber una oracion que contena una provincia y un numero lo va a tomar
   }
+
   private def getProvFromLine(line: String): Option[String] = {
     val listProv: List[String] = List("Buenos Aires","CABA","Catamarca","Chaco","Chubut","Córdoba","Corrientes","Entre Ríos","Formosa","Jujuy","La Pampa","La Rioja","Mendoza","Misiones","Neuquén","Río Negro","Salta","San Juan","San Luis", "Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán")
     listProv.find( prov => lineContainsProv(line,prov) )
   }
+
   private def lineContainsProv(line:String,prov:String): Boolean ={
     prov match { //TODO despues tenemos q hablar de eso de usar un solo & o un solo | https://www.dummies.com/programming/java/and-operators-and-in-java/
-      case "CABA" => line.contains("Ciudad de Buenos Aires") | line.contains("Ciudad Autónoma de Buenos Aires")
-      case "Buenos Aires" => line.contains("Buenos Aires") & ! line.contains("Ciudad de Buenos Aires") & ! line.contains("Ciudad Autónoma de Buenos Aires")
+      case "CABA" => line.contains("Ciudad de Buenos Aires") || line.contains("Ciudad Autónoma de Buenos Aires")
+      case "Buenos Aires" => line.contains("Buenos Aires") && ! line.contains("Ciudad de Buenos Aires") && ! line.contains("Ciudad Autónoma de Buenos Aires")
       case value => line.contains(value)
     }
   }
+
   private def getCasesFromLine(line: String): Int ={
     val pattern: Regex = "([0-9]+)".r
     val cases = pattern.findFirstMatchIn(line) match {

@@ -21,7 +21,7 @@ object Run extends App{
     x => x.nonEmpty)
 
   val documentAsByte: Array[Byte] = documentAsByteList.head
-  val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte)
+  val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte,dateUrl)
   println(covidData)
 
   val writerImpl: WriterImpl = WriterImpl()
