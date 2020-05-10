@@ -7,6 +7,9 @@ import java.time.temporal.ChronoUnit
 import gb.io.snow.scraper.models.CovidData
 import gb.io.snow.scraper.services.{DownloaderImpl, PdfReaderImpl, WriterImpl}
 
+import scala.io.Source
+import scala.util.Try
+
 object Run extends App{
 
   println("Starting...")
@@ -22,25 +25,44 @@ object Run extends App{
     "_reporte_vespertino_covid_19_1.pdf")
 
   val dateTo: LocalDate = java.time.LocalDate.now
-  val dateFrom: LocalDate = dateTo.minusDays(7)
-  // TO DO: get the dateFrom from the csvFile getting the last date
-  val numOfDaysBetween = ChronoUnit.DAYS.between(dateFrom, dateTo).toInt
-  val listDates: List[String] = (0 to numOfDaysBetween).toList.map(
-    i => dateFrom.plusDays(i).format(DateTimeFormatter.ofPattern("dd-MM-yy"))
-  )
+  val lastDateInCsv: String = List(getLastDate(csvFileTotalCases),getLastDate(csvFileCasesByProv)).min
+  val dateFrom: LocalDate = LocalDate.parse(lastDateInCsv).plusDays(1)
 
-  for (dateUrl <- listDates) {
-    val possibleUrl: List[String] = possibleEndUrl.map(StartUrl + dateUrl + _)
+  if (dateTo.compareTo(dateFrom)>0 ) {
 
-    val documentAsByte: Option[Array[Byte]] = possibleUrl.map(
-      url => DownloaderImpl().downloadLastData(url)).find(
-      x => x.nonEmpty)
+    val numOfDaysBetween = ChronoUnit.DAYS.between(dateFrom, dateTo).toInt
+    val listDates: List[String] = (0 to numOfDaysBetween).toList.map(
+      i => dateFrom.plusDays(i).format(DateTimeFormatter.ofPattern("dd-MM-yy"))
+    )
 
-    val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte, dateUrl)
-    println(covidData)
+    for (dateUrl <- listDates) {
+      val possibleUrl: List[String] = possibleEndUrl.map(StartUrl + dateUrl + _)
 
-    val writerImpl: WriterImpl = WriterImpl()
-    writerImpl.writeCsv(csvFileTotalCases, csvFileCasesByProv, covidData)
+      val documentAsByte: Option[Array[Byte]] = possibleUrl.map(
+        url => DownloaderImpl().downloadLastData(url)).find(
+        x => x.nonEmpty)
+
+      val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte, dateUrl)
+      println(covidData)
+
+      val writerImpl: WriterImpl = WriterImpl()
+      writerImpl.writeCsv(csvFileTotalCases, csvFileCasesByProv, covidData)
+
+    }
   }
   println("Finish")
+
+  def getLastDate(csvFile: String): String = {
+
+    val bufferedSourceTry = Try(Source.fromFile(csvFile))
+    if( bufferedSourceTry.isSuccess){
+      val bufferedSource = bufferedSourceTry.get
+      val dates = bufferedSource.getLines.map(
+        line => line.split(",")(0) ).toList
+      bufferedSource.close
+      dates.max
+    } else {"2020-04-01"} // the first date where report has the same structure. CHECK
+
+  }
 }
+
