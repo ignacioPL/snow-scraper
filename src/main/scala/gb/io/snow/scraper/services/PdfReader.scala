@@ -3,20 +3,21 @@ package gb.io.snow.scraper.services
 import gb.io.snow.scraper.models.CovidData
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import scala.util.matching.Regex
 
 trait PdfReader {
-  def readPdf(byte: Array[Byte], dateUrl: String): CovidData
+  def readPdf(byte: Option[Array[Byte]], dateUrl: String): CovidData
 }
 
 case class PdfReaderImpl() extends PdfReader {
 
-  override def readPdf(byte: Array[Byte], dateUrl: String): CovidData = {
-    if (byte.nonEmpty ) {
+  override def readPdf(byte: Option[Array[Byte]], dateUrl: String): CovidData = {
+    if (byte.isDefined ) {
       // get the text
-      val document: PDDocument = PDDocument.load(byte)
+      val document: PDDocument = PDDocument.load(byte.get)
       val pdfStripper = new PDFTextStripper()
       val text: String = pdfStripper.getText(document)
       document.close()
