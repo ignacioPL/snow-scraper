@@ -26,12 +26,12 @@ object Run extends App{
 
   val dateTo: LocalDate = java.time.LocalDate.now
   val lastDateInCsv: String = List(getLastDate(csvFileTotalCases),getLastDate(csvFileCasesByProv)).min
-  val dateFrom: LocalDate = LocalDate.parse(lastDateInCsv).plusDays(1)
+  val dateFrom: LocalDate = LocalDate.parse(lastDateInCsv)
 
   if (dateTo.compareTo(dateFrom)>0 ) {
 
     val numOfDaysBetween = ChronoUnit.DAYS.between(dateFrom, dateTo).toInt
-    val listDates: List[String] = (0 to numOfDaysBetween).toList.map(
+    val listDates: List[String] = (1 to numOfDaysBetween).toList.map(
       i => dateFrom.plusDays(i).format(DateTimeFormatter.ofPattern("dd-MM-yy"))
     )
 
