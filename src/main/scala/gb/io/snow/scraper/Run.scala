@@ -42,20 +42,21 @@ object Run extends App{
       val currentGovUrl: String = baseGovUrl+month+"2020"
       println("Month: " + month)
       println("Url: " + currentGovUrl)
-      val urlCovidForMonth: Array[AnyRef] = UrlExtractorImpl().getUrls(currentGovUrl)
+      val urlCovidForMonth: List[String] = UrlExtractorImpl().getUrls(currentGovUrl)
+
       if (month=="marzo"){
-        for (url <- urlCovidForMonth if pattern.findFirstIn(url.toString).isDefined &&
-            pattern.findFirstIn(url.toString).get.compareTo("16-03-20")>0  ){
-          val dateUrl: Option[String] = pattern.findFirstIn(url.toString)
-          val documentAsByte: Array[Byte] = DownloaderImpl().downloadLastData(url.toString)
+        for (url <- urlCovidForMonth if pattern.findFirstIn(url).isDefined &&
+            pattern.findFirstIn(url).get.compareTo("16-03-20")>0  ){
+          val dateUrl: Option[String] = pattern.findFirstIn(url)
+          val documentAsByte: Array[Byte] = DownloaderImpl().downloadLastData(url)
           val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte, dateUrl)
           println(covidData)
           WriterImpl().writeCsv(csvFileTotalCases, csvFileCasesByProv, covidData)
         }
       } else {
         for (url <- urlCovidForMonth){
-          val dateUrl: Option[String] = pattern.findFirstIn(url.toString)
-          val documentAsByte: Array[Byte] = DownloaderImpl().downloadLastData(url.toString)
+          val dateUrl: Option[String] = pattern.findFirstIn(url)
+          val documentAsByte: Array[Byte] = DownloaderImpl().downloadLastData(url)
           val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte, dateUrl)
           println(covidData)
           WriterImpl().writeCsv(csvFileTotalCases, csvFileCasesByProv, covidData)
