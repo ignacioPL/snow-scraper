@@ -2,8 +2,7 @@ package gb.io.snow.scraper.services
 
 import gb.io.snow.scraper.models.CovidData
 import better.files._
-//import java.time.LocalDate
-//import java.time.format.DateTimeFormatter
+
 
 trait Writer {
   def writeCsv(csvFile: String, csvFileByProv: String, data: CovidData)
