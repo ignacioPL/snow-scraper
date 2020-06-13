@@ -34,7 +34,7 @@ case class PdfReaderImpl() extends PdfReader {
 
   def getTotalCasesFromTextString(text: String): Int ={
     val stringPostNumberOfCases: String = text.split("Hoy fueron confirmados ")(1)
-    val numberOfCases: Int = stringPostNumberOfCases.split(" nuevos casos de COVID-19")(0).toInt
+    val numberOfCases: Int = stringPostNumberOfCases.split(" nuevos casos de COVID-19")(0).replace(".","").toInt
     numberOfCases
   }
 
