@@ -9,12 +9,12 @@ import org.apache.pdfbox.text.PDFTextStripper
 import scala.util.matching.Regex
 
 trait PdfReader {
-  def readPdf(byte: Array[Byte], dateUrl: Option[String]): CovidData
+  def readPdf(byte: Array[Byte], dateUrl: Option[LocalDate]): CovidData
 }
 
 case class PdfReaderImpl() extends PdfReader {
 
-  override def readPdf(byte: Array[Byte], dateUrl: Option[String]): CovidData = {
+  override def readPdf(byte: Array[Byte], dateUrl: Option[LocalDate]): CovidData = {
     if (byte.nonEmpty && dateUrl.isDefined) {
       // get the text
       val document: PDDocument = PDDocument.load(byte)
@@ -22,12 +22,10 @@ case class PdfReaderImpl() extends PdfReader {
       val text: String = pdfStripper.getText(document)
       document.close()
 
-      val formatter = DateTimeFormatter.ofPattern("[dd-MM-yy][d-MM-yy][dd-MM-yyyy]")
-      val date: LocalDate = LocalDate.parse(dateUrl.get,formatter)
       val numberOfCases: Int = getTotalCasesFromTextString(text)
-      //val mapProvCases: Map[String,Int] = getCasesByProvFromTextString(text)
-      val mapProvCases: Map[String,Int] = getCasesByProvFromTextString_v2(text,dateUrl.get)
-      CovidData(date,numberOfCases,mapProvCases)
+      val mapProvCases: Map[String,Int] = getCasesByProvFromTextString(text,dateUrl.get)
+
+      CovidData(dateUrl.get,numberOfCases,mapProvCases)
     } else {
       CovidData(null,0,null) }
   }
@@ -38,35 +36,18 @@ case class PdfReaderImpl() extends PdfReader {
     numberOfCases
   }
 
-  def getCasesByProvFromTextString(text: String): Map[String, Int] ={
-    val textProvincias: String = text.split("Detalle por provincia")(1)
+  def getCasesByProvFromTextString(text: String, dateUrl: LocalDate) :Map[String,Int] ={
+    val dateBreak: LocalDate = LocalDate.parse("27-03-20",DateTimeFormatter.ofPattern("dd-MM-yy") )
+    val stringToFindInText: String = dateUrl.compareTo(dateBreak)>0 match {
+      case true => "Detalle por provincia"
+      case false => "Hoy fueron confirmados"
+    }
 
-    val listProv: List[String] = List("Buenos Aires","Ciudad de Buenos Aires","Catamarca","Chaco","Chubut","Córdoba","Corrientes","Entre Ríos","Formosa","Jujuy","La Pampa","La Rioja","Mendoza","Misiones","Neuquén","Río Negro","Salta","San Juan","San Luis", "Santa Cruz","Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán")
-    val casesProv: List[Int] = listProv.filter(
-      prov => textProvincias.contains(prov)).map(
-      prov => textProvincias.split(prov)(1).split('/')(0).split('|')(0).trim.replace("*","").toInt )
-    listProv.zip(casesProv).toMap
-  }
-
-  def getCasesByProvFromTextString_v2(text: String,dateUrl: String) :Map[String,Int] ={
-
-    if (dateUrl.compareTo("27-03-20")>0) {
-      val textProvincias: String = text.split("Detalle por provincia")(1)
+    val textProvincias: String = text.split(stringToFindInText)(1)
       textProvincias.split("\n").map(
         line => ( getProvFromLine(line),getCasesFromLine(line) ) ).filter(
         x => x._1.isDefined & x._2 >= 0 ).map(
         x => (x._1.get,x._2)).toMap
-    } else {
-      //if (dateUrl.compareTo("16-03-20")>0) {
-      val textProvincias: String = text.split("Hoy fueron confirmados")(1)
-      textProvincias.split("\n").map(
-        line => (getProvFromLine(line), getCasesFromLine(line))).filter(
-        x => x._1.isDefined & x._2 >= 0).map(
-        x => (x._1.get, x._2)).toMap
-      //} else {
-      //}
-    }
-
     // TODO: una vez q termina el listado de provncias, si llegara a haber una oracion que contena una provincia y un numero lo va a tomar
   }
 

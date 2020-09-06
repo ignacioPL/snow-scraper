@@ -1,14 +1,11 @@
 package gb.io.snow.scraper
 
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
+import java.time.format.DateTimeFormatter
 
 import scala.util.matching.Regex
 import gb.io.snow.scraper.models.CovidData
-import gb.io.snow.scraper.services.{DownloaderImpl, PdfReaderImpl, UrlExtractorImpl, WriterImpl}
-
-import scala.io.Source
-import scala.util.Try
+import gb.io.snow.scraper.services.{DayUrlExtractor, DownloaderImpl, MonthUrlExtractor, PdfReaderImpl, WriterImpl}
 
 object Run extends App{
 
@@ -16,7 +13,7 @@ object Run extends App{
 
   val csvFileTotalCases: String  = "C:/Users/gisela.bellisomi/Documents/personal/corona/snow-scraper/casos_crorona_arggob.csv"
   val csvFileCasesByProv: String  = "C:/Users/gisela.bellisomi/Documents/personal/corona/snow-scraper/casos_crorona_byprov.csv"
-  val baseGovUrl: String = "https://www.argentina.gob.ar/coronavirus/informe-diario/"
+
   val pattern : Regex = new Regex("(\\d+)-(\\d+)-(\\d+)")
   val dictMonth = Map("JANUARY" -> "enero",
     "FEBRUARY" -> "febreo",
@@ -31,60 +28,43 @@ object Run extends App{
     "NOVEMBER" -> "noviembre",
     "DECEMBER" -> "diciembre")
 
-  val dateTo: LocalDate = java.time.LocalDate.now
-  val lastDateInCsv: String = List(getLastDate(csvFileTotalCases),getLastDate(csvFileCasesByProv)).min
-  val dateFrom: LocalDate = LocalDate.parse(lastDateInCsv)
+  val monthsUrl: List[String] = MonthUrlExtractor().getUrls("https://www.argentina.gob.ar/coronavirus/informes-diarios/reportes")
 
-  if (dateTo.compareTo(dateFrom)>0 ) {
-    val setUniqueMonths: Set[String] = getMonthsBetweenDates(dateFrom,dateTo)
+  for (currentMonthUrl <- monthsUrl){
+    println("New: " + currentMonthUrl)
+    val dailyUrls: List[String] = DayUrlExtractor().getUrls(currentMonthUrl)
 
-    for (month <- setUniqueMonths){
-      val currentGovUrl: String = baseGovUrl+month+"2020"
-      println("Month: " + month)
-      println("Url: " + currentGovUrl)
-      val urlCovidForMonth: List[String] = UrlExtractorImpl().getUrls(currentGovUrl)
+    for (url <- dailyUrls ){
+      val dateUrl: Option[LocalDate] = extractDateFromUrl(url)
+      // TO DO: think how to get info from reports before 2020-03-16. There is no pattern.
+      if ( IsGraterThanMinDateAllowed(dateUrl) ) {
 
-      if (month=="marzo"){
-        for (url <- urlCovidForMonth if pattern.findFirstIn(url).isDefined &&
-            pattern.findFirstIn(url).get.compareTo("16-03-20")>0  ){
-          val dateUrl: Option[String] = pattern.findFirstIn(url)
-          val documentAsByte: Array[Byte] = DownloaderImpl().downloadLastData(url)
-          val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte, dateUrl)
-          println(covidData)
-          WriterImpl().writeCsv(csvFileTotalCases, csvFileCasesByProv, covidData)
-        }
-      } else {
-        for (url <- urlCovidForMonth){
-          val dateUrl: Option[String] = pattern.findFirstIn(url)
-          val documentAsByte: Array[Byte] = DownloaderImpl().downloadLastData(url)
-          val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte, dateUrl)
-          println(covidData)
-          WriterImpl().writeCsv(csvFileTotalCases, csvFileCasesByProv, covidData)
-        }
+        val documentAsByte: Array[Byte] = DownloaderImpl().downloadLastData(url)
+        val covidData: CovidData = PdfReaderImpl().readPdf(documentAsByte, dateUrl)
+        println(covidData)
+        WriterImpl().writeCsv(csvFileTotalCases, csvFileCasesByProv, covidData)
+
       }
     }
   }
+
   println("Finish")
 
-  private def getLastDate(csvFile: String): String = {
-
-    val bufferedSourceTry = Try(Source.fromFile(csvFile))
-    if( bufferedSourceTry.isSuccess){
-      val bufferedSource = bufferedSourceTry.get
-      val dates = bufferedSource.getLines.map(
-        line => line.split(",")(0) ).toList
-      bufferedSource.close
-      dates.max
-    } else {"2020-03-16"} // the first date where report has the same structure. CHECK
-
+  private def extractDateFromUrl(url: String): Option[LocalDate] ={
+    val dateAsString: Option[String] = pattern.findFirstIn(url)
+    if (dateAsString.isDefined) {
+      val formatter = DateTimeFormatter.ofPattern("[dd-MM-yyyy][d-MM-yyyy][d-MM-yy][dd-MM-yy]")
+      val date: LocalDate = LocalDate.parse(dateAsString.get, formatter)
+      Option(date)
+    } else { None }
   }
-  private def getMonthsBetweenDates(dateFrom: LocalDate, dateTo: LocalDate): Set[String] ={
-    val numOfDaysBetween = ChronoUnit.DAYS.between(dateFrom, dateTo).toInt
-    val listMonths: List[Option[String]] = (1 to numOfDaysBetween).toList.map(
-      i => dictMonth.get(dateFrom.plusDays(i).getMonth.toString)
-    )
-    val setUniqueMonths: Set[String] = listMonths.filter( _.isDefined).map(opt => opt.get).toSet
-    setUniqueMonths
+
+  private def IsGraterThanMinDateAllowed(dateUrl: Option[LocalDate]): Boolean={
+    val formatter = DateTimeFormatter.ofPattern("[dd-MM-yyyy][d-MM-yyyy][d-MM-yy][dd-MM-yy]")
+    val minDateAllowed = LocalDate.parse("16-03-20",formatter)
+
+    dateUrl.isDefined && dateUrl.get.compareTo(minDateAllowed)>0
+
   }
 }
 
