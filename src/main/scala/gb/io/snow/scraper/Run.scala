@@ -35,6 +35,7 @@ object Run extends App{
     val dailyUrls: List[String] = DayUrlExtractor().getUrls(currentMonthUrl)
 
     for (url <- dailyUrls ){
+
       val dateUrl: Option[LocalDate] = extractDateFromUrl(url)
       // TO DO: think how to get info from reports before 2020-03-16. There is no pattern.
       if ( IsGraterThanMinDateAllowed(dateUrl) ) {
