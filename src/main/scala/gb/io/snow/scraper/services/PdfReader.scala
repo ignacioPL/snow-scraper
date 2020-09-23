@@ -66,7 +66,7 @@ case class PdfReaderImpl() extends PdfReader {
 
   private def getCasesFromLine(line: String): Int ={
     val pattern: Regex = "([0-9]+)".r
-    val cases = pattern.findFirstMatchIn(line) match {
+    val cases = pattern.findFirstMatchIn(line.replace(".","")) match {
       case Some(value) => value.toString().toInt
       case None => -1
     }
